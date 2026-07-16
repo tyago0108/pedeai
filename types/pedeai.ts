@@ -20,4 +20,5 @@ export type Loja = {
   agenda_funcionamento?: Record<string, { ativo?: boolean; inicio?: string; fim?: string }> | null;
   mensagem_pausa?: string | null;
   pix_chave?: string | null;
+  pix_mensagem?: string | null;
 };

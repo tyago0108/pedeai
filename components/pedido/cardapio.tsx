@@ -13,7 +13,11 @@ export function Cardapio({ loja, produtos, funcionamento }: { loja: Loja; produt
   const [enderecos, setEnderecos] = useState<Endereco[]>([]); const [endereco, setEndereco] = useState<Endereco>(enderecoVazio);
   const [atendimento, setAtendimento] = useState<"entrega" | "retirada">("entrega"); const [pagamento, setPagamento] = useState("Pix"); const [trocoPara, setTrocoPara] = useState(""); const [observacao, setObservacao] = useState("");
   const [enviando, setEnviando] = useState(false); const [mensagem, setMensagem] = useState(""); const [pedidoId, setPedidoId] = useState(""); const [acompanhamento, setAcompanhamento] = useState(""); const [codigoGerado, setCodigoGerado] = useState("");
-  useEffect(() => { if (etapa === "confirmado" && pagamento === "Pix" && acompanhamento) window.location.href = `/pix/${acompanhamento}`; }, [etapa, pagamento, acompanhamento]);
+  useEffect(() => {
+    if (etapa !== "confirmado" || pagamento !== "Pix" || !acompanhamento) return;
+    if (codigoGerado) window.sessionStorage.setItem(`pedeai:codigo-cliente:${acompanhamento}`, codigoGerado);
+    window.location.assign(`/pix/${acompanhamento}`);
+  }, [etapa, pagamento, acompanhamento, codigoGerado]);
   // Confirmação por código de entrega está reservada para uma versão futura.
   const codigoRetirada = "";
   const setCodigoRetirada = (_codigo: unknown) => undefined;

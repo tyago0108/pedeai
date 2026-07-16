@@ -105,8 +105,8 @@ export async function POST(request: Request) {
     );
     if (itensError) throw itensError;
 
-    const { data: dadosPix } = await supabase.from("empresas").select("pix_chave,whatsapp").eq("id",empresaId).maybeSingle();
-    return Response.json({ pedidoId: pedido.id, acompanhamento: pedido.codigo_acompanhamento, codigoCliente: novoCodigoCliente, pixChave: dadosPix?.pix_chave ?? null, whatsappRestaurante: dadosPix?.whatsapp ?? null }, { status: 201 });
+    const { data: dadosPix } = await supabase.from("empresas").select("pix_chave,pix_mensagem,whatsapp").eq("id",empresaId).maybeSingle();
+    return Response.json({ pedidoId: pedido.id, acompanhamento: pedido.codigo_acompanhamento, codigoCliente: novoCodigoCliente, pixChave: dadosPix?.pix_chave ?? null, pixMensagem: dadosPix?.pix_mensagem ?? null, whatsappRestaurante: dadosPix?.whatsapp ?? null }, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar pedido", error);
     return Response.json({ error: "Não foi possível enviar o pedido. Tente novamente." }, { status: 500 });
