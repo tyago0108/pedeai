@@ -1,5 +1,3 @@
-import { LoginAdmin } from "@/components/admin/login";
+import { redirect } from "next/navigation";
 
-export default function EntrarPlataformaPage() {
-  return <LoginAdmin redirectTo="/plataforma" titulo="Acesso master" descricao="Entre para administrar restaurantes e a plataforma PedeAI." />;
-}
+export default function EntrarPlataformaPage() { redirect("/entrar"); }

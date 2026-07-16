@@ -1,2 +1,2 @@
-import { LoginAdmin } from "@/components/admin/login";
-export default function LoginRestaurantePage(){return <LoginAdmin redirectTo="/restaurante"/>;}
+import { redirect } from "next/navigation";
+export default function LoginRestaurantePage(){ redirect("/entrar"); }

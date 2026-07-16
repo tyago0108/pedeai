@@ -1,3 +1,3 @@
-import { LoginAdmin } from "@/components/admin/login";
+import { redirect } from "next/navigation";
 
-export default function AdminPage() { return <LoginAdmin />; }
+export default function AdminPage() { redirect("/entrar"); }
