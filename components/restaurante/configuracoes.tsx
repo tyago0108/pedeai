@@ -3,6 +3,7 @@
 import { FormEvent, useEffect, useState } from "react";
 import { ChavePix } from "@/components/restaurante/chave-pix";
 import { CodigoCliente } from "@/components/restaurante/codigo-cliente";
+import { NotificacoesPedido } from "@/components/restaurante/notificacoes-pedido";
 import { supabase } from "@/lib/supabase/client";
 
 type Agenda = Record<string, { ativo: boolean; inicio: string; fim: string }>;
@@ -143,6 +144,7 @@ export function ConfiguracoesRestaurante() {
       </form>
 
       <ChavePix />
+      <NotificacoesPedido />
       <CodigoCliente />
     </main>
   );
