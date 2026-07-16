@@ -55,9 +55,11 @@ export async function POST(request: Request) {
         tipo_atendimento: tipoAtendimento,
         endereco_entrega: enderecoEntrega || null,
         troco_para: trocoPara,
+        codigo_acompanhamento: crypto.randomUUID(),
+        codigo_retirada: crypto.randomUUID().replace(/-/g, "").slice(0, 6).toUpperCase(),
         total,
       })
-      .select("id")
+      .select("id, codigo_acompanhamento, codigo_retirada")
       .single();
 
     if (pedidoError || !pedido) throw pedidoError ?? new Error("Não foi possível criar o pedido.");
@@ -73,7 +75,7 @@ export async function POST(request: Request) {
     );
     if (itensError) throw itensError;
 
-    return Response.json({ pedidoId: pedido.id }, { status: 201 });
+    return Response.json({ pedidoId: pedido.id, acompanhamento: pedido.codigo_acompanhamento, codigoRetirada: pedido.codigo_retirada }, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar pedido", error);
     return Response.json({ error: "Não foi possível enviar o pedido. Tente novamente." }, { status: 500 });
