@@ -3,7 +3,7 @@ import { requirePlatformAdmin } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin(request);
-    const { data, error } = await admin.from("empresas").select("id,nome,slug,bloqueada,ativo,pendente_aprovacao,created_at,perfis(nome)").order("created_at", { ascending: false });
+    const { data, error } = await admin.from("empresas").select("id,nome,slug,whatsapp,endereco,horario_funcionamento,logo_url,taxa_entrega,taxa_cartao,tempo_entrega_minutos,bloqueada,ativo,pendente_aprovacao,created_at,perfis(nome)").order("created_at", { ascending: false });
     if (error) throw error;
     return Response.json(data);
   } catch (error) {
@@ -48,6 +48,17 @@ export async function PATCH(request: Request) {
       const { data: perfil, error: perfilError } = await admin.from("perfis").select("id").eq("empresa_id", empresaId).eq("papel", "dono").single();
       if (perfilError || !perfil) throw perfilError ?? new Error("Administrador não encontrado.");
       const { error } = await admin.auth.admin.updateUserById(perfil.id, { password: String(body.senha ?? "") });
+      if (error) throw error;
+    } else if (body.acao === "editar") {
+      const dados = {
+        nome: String(body.nome ?? "").trim(),
+        slug: String(body.slug ?? "").trim().toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, ""),
+        whatsapp: String(body.whatsapp ?? "").trim() || null,
+        endereco: String(body.endereco ?? "").trim() || null,
+        horario_funcionamento: String(body.horario ?? "").trim() || null,
+      };
+      if (!dados.nome || !dados.slug) return Response.json({ error: "Nome e link do restaurante são obrigatórios." }, { status: 400 });
+      const { error } = await admin.from("empresas").update(dados).eq("id", empresaId);
       if (error) throw error;
     } else if (body.acao === "mensagem") {
       const { error } = await admin.from("mensagens_plataforma").insert({ empresa_id: empresaId, titulo: String(body.titulo ?? "Comunicado"), conteudo: String(body.conteudo ?? "") });

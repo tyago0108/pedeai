@@ -15,4 +15,5 @@ export type Loja = {
   nome: string;
   slug: string;
   whatsapp: string | null;
+  logo_url?: string | null;
 };
