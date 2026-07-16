@@ -53,7 +53,7 @@ export function PainelPedidos() {
     if (perfilError || !perfil) { setErro("Este usuário não está vinculado a um restaurante."); setCarregando(false); return; }
     setEmpresaId(perfil.empresa_id);
     const [pedidosResposta, produtosResposta] = await Promise.all([
-      supabase.from("pedidos").select("id, cliente_nome, cliente_telefone, tipo_entrega, status, pagamento, total, created_at, codigo_retirada, endereco_entrega").eq("empresa_id", perfil.empresa_id).order("created_at", { ascending: false }),
+      supabase.from("pedidos").select("id, cliente_nome, cliente_telefone, tipo_entrega, status, pagamento, total, created_at, endereco_entrega").eq("empresa_id", perfil.empresa_id).order("created_at", { ascending: false }),
       supabase.from("produtos").select("id, nome, preco").eq("empresa_id", perfil.empresa_id).eq("disponivel", true).order("nome"),
     ]);
     if (pedidosResposta.error) setErro("Não foi possível carregar os pedidos.");
