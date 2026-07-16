@@ -108,7 +108,7 @@ export async function POST(request: Request) {
     const { data: pedido, error: pedidoErro } = await supabase
       .from("pedidos")
       .insert({ empresa_id: empresaId, cliente_nome: nome, cliente_telefone: telefone, cliente_publico_id: cliente.id, tipo_entrega: "whatsapp", pagamento, observacao: observacao || null, tipo_atendimento: tipoAtendimento, endereco_entrega: enderecoTexto, endereco_publico_id: enderecoPublicoId, troco_para: trocoPara, codigo_acompanhamento: crypto.randomUUID(), total })
-      .select("id,codigo_acompanhamento")
+      .select("id,codigo_acompanhamento,numero_pedido")
       .single();
     if (pedidoErro || !pedido) throw pedidoErro ?? new Error("Não foi possível criar o pedido.");
 
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
     if (itensErro) throw itensErro;
 
     const { data: dadosPix } = await supabase.from("empresas").select("pix_chave,pix_mensagem,whatsapp").eq("id", empresaId).maybeSingle();
-    const resposta = NextResponse.json({ pedidoId: pedido.id, acompanhamento: pedido.codigo_acompanhamento, senhaCliente: senhaGerada, pixChave: dadosPix?.pix_chave ?? null, pixMensagem: dadosPix?.pix_mensagem ?? null, whatsappRestaurante: dadosPix?.whatsapp ?? null }, { status: 201 });
+    const resposta = NextResponse.json({ pedidoId: pedido.id, numeroPedido: pedido.numero_pedido, acompanhamento: pedido.codigo_acompanhamento, senhaCliente: senhaGerada, pixChave: dadosPix?.pix_chave ?? null, pixMensagem: dadosPix?.pix_mensagem ?? null, whatsappRestaurante: dadosPix?.whatsapp ?? null }, { status: 201 });
     const token = criarSessaoCliente(empresa.slug, telefone, cliente.codigo_acesso);
     if (token) resposta.cookies.set(nomeCookieCliente(empresa.slug), token, opcoesCookieCliente);
     return resposta;

@@ -7,7 +7,7 @@ export async function GET(request: Request) {
   const admin = getSupabaseAdmin();
   const { data: pedido, error } = await admin
     .from("pedidos")
-    .select("id,cliente_nome,status,total,created_at,tipo_atendimento,pagamento,empresas(nome,slug,tempo_entrega_minutos,whatsapp,pix_chave,pix_mensagem)")
+    .select("id,numero_pedido,cliente_nome,status,total,created_at,tipo_atendimento,pagamento,empresas(nome,slug,tempo_entrega_minutos,whatsapp,pix_chave,pix_mensagem)")
     .eq("codigo_acompanhamento", codigo)
     .maybeSingle();
   if (error || !pedido) return Response.json({ error: "Pedido não encontrado." }, { status: 404 });
