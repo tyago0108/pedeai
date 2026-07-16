@@ -19,4 +19,5 @@ export type Loja = {
   modo_operacao?: string;
   agenda_funcionamento?: Record<string, { ativo?: boolean; inicio?: string; fim?: string }> | null;
   mensagem_pausa?: string | null;
+  pix_chave?: string | null;
 };
