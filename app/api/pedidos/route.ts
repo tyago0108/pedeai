@@ -9,10 +9,13 @@ export async function POST(request: Request) {
     const telefone = typeof body.telefone === "string" ? body.telefone.trim() : null;
     const pagamento = typeof body.pagamento === "string" ? body.pagamento.trim() : "";
     const observacao = typeof body.observacao === "string" ? body.observacao.trim() : null;
+    const enderecoEntrega = typeof body.enderecoEntrega === "string" ? body.enderecoEntrega.trim() : null;
+    const tipoAtendimento = body.tipoAtendimento === "retirada" ? "retirada" : "entrega";
+    const trocoPara = typeof body.trocoPara === "number" && body.trocoPara > 0 ? body.trocoPara : null;
     const empresaId = typeof body.empresaId === "string" ? body.empresaId : "";
     const itens = Array.isArray(body.itens) ? (body.itens as ItemRecebido[]) : [];
 
-    if (!nome || !pagamento || !empresaId || itens.length === 0) {
+    if (!nome || !telefone || !pagamento || !empresaId || itens.length === 0 || (tipoAtendimento === "entrega" && !enderecoEntrega)) {
       return Response.json({ error: "Preencha nome, pagamento e itens do pedido." }, { status: 400 });
     }
 
@@ -48,6 +51,9 @@ export async function POST(request: Request) {
         tipo_entrega: "whatsapp",
         pagamento,
         observacao: observacao || null,
+        tipo_atendimento: tipoAtendimento,
+        endereco_entrega: enderecoEntrega || null,
+        troco_para: trocoPara,
         total,
       })
       .select("id")

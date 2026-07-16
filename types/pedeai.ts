@@ -5,6 +5,7 @@ export type Produto = {
   preco: number;
   disponivel: boolean;
   categoria: string | null;
+  imagem_url?: string | null;
 };
 
 export type ItemCarrinho = Produto & { quantidade: number };

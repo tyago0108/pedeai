@@ -4,55 +4,39 @@ import { FormEvent, useMemo, useState } from "react";
 import type { ItemCarrinho, Loja, Produto } from "@/types/pedeai";
 
 const moeda = new Intl.NumberFormat("pt-BR", { style: "currency", currency: "BRL" });
+type Etapa = "menu" | "carrinho" | "checkout" | "confirmado";
 
 export function Cardapio({ loja, produtos }: { loja: Loja; produtos: Produto[] }) {
   const [carrinho, setCarrinho] = useState<ItemCarrinho[]>([]);
-  const [nome, setNome] = useState("");
-  const [telefone, setTelefone] = useState("");
-  const [pagamento, setPagamento] = useState("Pix");
-  const [observacao, setObservacao] = useState("");
-  const [enviando, setEnviando] = useState(false);
-  const [mensagem, setMensagem] = useState("");
+  const [etapa, setEtapa] = useState<Etapa>("menu");
+  const [nome, setNome] = useState(""); const [telefone, setTelefone] = useState("");
+  const [atendimento, setAtendimento] = useState<"entrega" | "retirada">("entrega");
+  const [endereco, setEndereco] = useState(""); const [pagamento, setPagamento] = useState("Pix");
+  const [trocoPara, setTrocoPara] = useState(""); const [observacao, setObservacao] = useState("");
+  const [enviando, setEnviando] = useState(false); const [mensagem, setMensagem] = useState(""); const [pedidoId, setPedidoId] = useState("");
   const total = useMemo(() => carrinho.reduce((soma, item) => soma + item.preco * item.quantidade, 0), [carrinho]);
+  const categorias = useMemo(() => Array.from(new Set(produtos.map((produto) => produto.categoria || "Outros"))), [produtos]);
+  const [categoriaAtiva, setCategoriaAtiva] = useState("Todos");
+  const visiveis = categoriaAtiva === "Todos" ? produtos : produtos.filter((produto) => (produto.categoria || "Outros") === categoriaAtiva);
 
-  function adicionar(produto: Produto) {
-    setCarrinho((atual) => {
-      const encontrado = atual.find((item) => item.id === produto.id);
-      if (encontrado) return atual.map((item) => item.id === produto.id ? { ...item, quantidade: item.quantidade + 1 } : item);
-      return [...atual, { ...produto, quantidade: 1 }];
-    });
-  }
-
-  function alterarQuantidade(id: string, delta: number) {
-    setCarrinho((atual) => atual.flatMap((item) => {
-      if (item.id !== id) return [item];
-      const quantidade = item.quantidade + delta;
-      return quantidade > 0 ? [{ ...item, quantidade }] : [];
-    }));
-  }
+  function adicionar(produto: Produto) { setCarrinho((atual) => { const encontrado = atual.find((item) => item.id === produto.id); return encontrado ? atual.map((item) => item.id === produto.id ? { ...item, quantidade: item.quantidade + 1 } : item) : [...atual, { ...produto, quantidade: 1 }]; }); }
+  function alterarQuantidade(id: string, delta: number) { setCarrinho((atual) => atual.flatMap((item) => item.id !== id ? [item] : item.quantidade + delta > 0 ? [{ ...item, quantidade: item.quantidade + delta }] : [])); }
 
   async function finalizar(event: FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    setMensagem("");
+    event.preventDefault(); setMensagem("");
+    if (atendimento === "entrega" && !endereco.trim()) return setMensagem("Informe o endereço de entrega.");
     setEnviando(true);
-    const resposta = await fetch("/api/pedidos", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        empresaId: loja.id, nome, telefone, pagamento, observacao,
-        itens: carrinho.map((item) => ({ produtoId: item.id, quantidade: item.quantidade })),
-      }),
-    });
-    const resultado = await resposta.json();
-    setEnviando(false);
+    const resposta = await fetch("/api/pedidos", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ empresaId: loja.id, nome, telefone, pagamento, observacao, tipoAtendimento: atendimento, enderecoEntrega: endereco, trocoPara: pagamento === "Dinheiro" && trocoPara ? Number(trocoPara.replace(",", ".")) : null, itens: carrinho.map((item) => ({ produtoId: item.id, quantidade: item.quantidade })) }) });
+    const resultado = await resposta.json(); setEnviando(false);
     if (!resposta.ok) return setMensagem(resultado.error ?? "Não foi possível enviar o pedido.");
-    setMensagem("Pedido enviado! A lanchonete vai confirmar pelo WhatsApp.");
-    setCarrinho([]);
+    setPedidoId(resultado.pedidoId); setCarrinho([]); setEtapa("confirmado");
   }
 
-  return <main className="mx-auto min-h-screen max-w-2xl bg-stone-50 px-4 py-8 text-stone-900">
-    <header className="mb-8 rounded-3xl bg-orange-500 p-6 text-white shadow-sm"><p className="text-sm font-semibold uppercase tracking-widest text-orange-100">PedeAI</p><h1 className="mt-1 text-3xl font-bold">{loja.nome}</h1><p className="mt-2 text-orange-50">Faça seu pedido sem sair do WhatsApp.</p></header>
-    <section><h2 className="mb-4 text-xl font-bold">Cardápio</h2><div className="space-y-3">{produtos.map((produto) => <article key={produto.id} className="flex items-center gap-4 rounded-2xl bg-white p-4 shadow-sm"><div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-orange-100 text-2xl">🍔</div><div className="min-w-0 flex-1"><h3 className="font-bold">{produto.nome}</h3>{produto.descricao && <p className="mt-1 text-sm text-stone-500">{produto.descricao}</p>}<p className="mt-2 font-semibold text-orange-600">{moeda.format(produto.preco)}</p></div><button onClick={() => adicionar(produto)} className="rounded-xl bg-stone-900 px-3 py-2 text-sm font-bold text-white">Adicionar</button></article>)}</div></section>
-    <section className="mt-8 rounded-3xl bg-white p-5 shadow-sm"><h2 className="text-xl font-bold">Seu pedido</h2>{carrinho.length === 0 ? <p className="mt-3 text-stone-500">Escolha os itens do cardápio.</p> : <form onSubmit={finalizar} className="mt-4 space-y-4">{carrinho.map((item) => <div key={item.id} className="flex items-center justify-between border-b border-stone-100 pb-3"><div><p className="font-semibold">{item.nome}</p><p className="text-sm text-stone-500">{moeda.format(item.preco)} cada</p></div><div className="flex items-center gap-3"><button type="button" onClick={() => alterarQuantidade(item.id, -1)} className="h-8 w-8 rounded-full bg-stone-100 font-bold">−</button><span className="font-bold">{item.quantidade}</span><button type="button" onClick={() => alterarQuantidade(item.id, 1)} className="h-8 w-8 rounded-full bg-stone-100 font-bold">+</button></div></div>)}<div className="flex justify-between text-lg font-bold"><span>Total</span><span>{moeda.format(total)}</span></div><input required value={nome} onChange={(e) => setNome(e.target.value)} placeholder="Seu nome" className="w-full rounded-xl border border-stone-200 px-4 py-3" /><input value={telefone} onChange={(e) => setTelefone(e.target.value)} placeholder="Seu WhatsApp (opcional)" className="w-full rounded-xl border border-stone-200 px-4 py-3" /><select value={pagamento} onChange={(e) => setPagamento(e.target.value)} className="w-full rounded-xl border border-stone-200 px-4 py-3"><option>Pix</option><option>Dinheiro</option><option>Cartão</option></select><textarea value={observacao} onChange={(e) => setObservacao(e.target.value)} placeholder="Observação do pedido (opcional)" className="w-full rounded-xl border border-stone-200 px-4 py-3" rows={3} />{mensagem && <p role="status" className="rounded-xl bg-orange-50 p-3 text-sm font-medium text-orange-800">{mensagem}</p>}<button disabled={enviando} className="w-full rounded-xl bg-orange-500 px-4 py-3 font-bold text-white disabled:opacity-60">{enviando ? "Enviando..." : "Enviar pedido"}</button></form>}</section>
-  </main>;
+  if (etapa === "confirmado") return <main className="grid min-h-screen place-items-center bg-stone-50 p-5 text-stone-900"><section className="w-full max-w-md rounded-3xl bg-white p-7 text-center shadow-sm"><div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-green-100 text-3xl">✓</div><p className="mt-5 text-sm font-bold uppercase tracking-widest text-orange-500">Pedido enviado</p><h1 className="mt-2 text-3xl font-bold">Tudo certo!</h1><p className="mt-3 text-stone-600">O restaurante recebeu seu pedido e poderá atualizar o status pelo painel.</p><p className="mt-4 text-xs text-stone-400">Código do pedido: {pedidoId.slice(0, 8)}</p><button onClick={() => { setEtapa("menu"); setPedidoId(""); }} className="mt-6 w-full rounded-xl bg-stone-900 py-3 font-bold text-white">Voltar ao cardápio</button></section></main>;
+
+  return <main className="min-h-screen bg-stone-50 pb-28 text-stone-900"><header className="bg-orange-500 px-5 pb-8 pt-6 text-white"><div className="mx-auto max-w-2xl"><p className="text-xs font-bold uppercase tracking-[0.2em] text-orange-100">PedeAI</p><h1 className="mt-2 text-3xl font-bold">{loja.nome}</h1><p className="mt-2 text-sm text-orange-50">Peça online, rápido e sem cadastro.</p></div></header><section className="mx-auto max-w-2xl px-4"><div className="-mt-4 flex gap-2 overflow-x-auto pb-3">{["Todos", ...categorias].map((categoria) => <button key={categoria} onClick={() => setCategoriaAtiva(categoria)} className={`shrink-0 rounded-full px-4 py-2 text-sm font-bold shadow-sm ${categoriaAtiva === categoria ? "bg-stone-900 text-white" : "bg-white text-stone-600"}`}>{categoria}</button>)}</div>
+    {etapa === "menu" && <section className="space-y-3 pt-3">{visiveis.length === 0 ? <p className="rounded-2xl bg-white p-5 text-sm text-stone-500">Não há produtos disponíveis nesta categoria.</p> : visiveis.map((produto) => <article key={produto.id} className="flex gap-3 rounded-2xl bg-white p-3 shadow-sm"><div className="grid h-24 w-24 shrink-0 place-items-center overflow-hidden rounded-xl bg-orange-100 text-3xl">{produto.imagem_url ? <img src={produto.imagem_url} alt={produto.nome} className="h-full w-full object-cover"/> : "🍔"}</div><div className="flex min-w-0 flex-1 flex-col"><h2 className="font-bold">{produto.nome}</h2>{produto.descricao && <p className="mt-1 text-sm leading-5 text-stone-500">{produto.descricao}</p>}<div className="mt-auto flex items-end justify-between gap-2"><strong className="text-orange-600">{moeda.format(produto.preco)}</strong><button onClick={() => adicionar(produto)} className="rounded-xl bg-stone-900 px-3 py-2 text-sm font-bold text-white">Adicionar</button></div></div></article>)}</section>}
+    {etapa === "carrinho" && <section className="pt-6"><button onClick={() => setEtapa("menu")} className="text-sm font-bold text-orange-600">← Continuar comprando</button><h2 className="mt-3 text-2xl font-bold">Seu carrinho</h2>{carrinho.map((item) => <article key={item.id} className="mt-3 flex items-center gap-3 rounded-2xl bg-white p-4 shadow-sm"><div className="flex-1"><p className="font-bold">{item.nome}</p><p className="text-sm text-orange-600">{moeda.format(item.preco)}</p></div><button onClick={() => alterarQuantidade(item.id, -1)} className="h-9 w-9 rounded-full bg-stone-100 font-bold">−</button><strong>{item.quantidade}</strong><button onClick={() => alterarQuantidade(item.id, 1)} className="h-9 w-9 rounded-full bg-stone-900 font-bold text-white">+</button></article>)}<div className="mt-5 flex justify-between text-lg font-bold"><span>Total</span><span>{moeda.format(total)}</span></div><button onClick={() => setEtapa("checkout")} className="mt-5 w-full rounded-xl bg-orange-500 py-3 font-bold text-white">Ir para pagamento</button></section>}
+    {etapa === "checkout" && <form onSubmit={finalizar} className="pt-6"><button type="button" onClick={() => setEtapa("carrinho")} className="text-sm font-bold text-orange-600">← Voltar ao carrinho</button><h2 className="mt-3 text-2xl font-bold">Finalizar pedido</h2><div className="mt-4 space-y-3 rounded-2xl bg-white p-4 shadow-sm"><h3 className="font-bold">Seus dados</h3><input required value={nome} onChange={(event) => setNome(event.target.value)} placeholder="Seu nome" className="campo"/><input required value={telefone} onChange={(event) => setTelefone(event.target.value)} placeholder="WhatsApp" className="campo"/></div><div className="mt-4 rounded-2xl bg-white p-4 shadow-sm"><h3 className="font-bold">Como quer receber?</h3><div className="mt-3 grid grid-cols-2 gap-2"><button type="button" onClick={() => setAtendimento("entrega")} className={`rounded-xl p-3 text-sm font-bold ${atendimento === "entrega" ? "bg-stone-900 text-white" : "bg-stone-100"}`}>Entrega</button><button type="button" onClick={() => setAtendimento("retirada")} className={`rounded-xl p-3 text-sm font-bold ${atendimento === "retirada" ? "bg-stone-900 text-white" : "bg-stone-100"}`}>Retirar no local</button></div>{atendimento === "entrega" && <textarea required value={endereco} onChange={(event) => setEndereco(event.target.value)} placeholder="Rua, número, bairro e referência" rows={3} className="campo mt-3"/>}</div><div className="mt-4 rounded-2xl bg-white p-4 shadow-sm"><h3 className="font-bold">Pagamento</h3><select value={pagamento} onChange={(event) => setPagamento(event.target.value)} className="campo mt-3"><option>Pix</option><option>Cartão</option><option>Dinheiro</option></select>{pagamento === "Dinheiro" && <input value={trocoPara} onChange={(event) => setTrocoPara(event.target.value)} inputMode="decimal" placeholder="Troco para quanto? Ex.: 50,00" className="campo mt-3"/>}<textarea value={observacao} onChange={(event) => setObservacao(event.target.value)} placeholder="Observação (opcional)" rows={2} className="campo mt-3"/></div>{mensagem && <p className="mt-3 rounded-xl bg-red-50 p-3 text-sm text-red-700">{mensagem}</p>}<button disabled={enviando} className="mt-5 w-full rounded-xl bg-orange-500 py-3 font-bold text-white disabled:opacity-50">{enviando ? "Enviando pedido..." : `Confirmar pedido · ${moeda.format(total)}`}</button></form>}
+  </section>{carrinho.length > 0 && etapa === "menu" && <button onClick={() => setEtapa("carrinho")} className="fixed inset-x-4 bottom-4 z-20 mx-auto flex max-w-2xl items-center justify-between rounded-2xl bg-stone-900 px-5 py-4 font-bold text-white shadow-xl"><span>{carrinho.reduce((soma, item) => soma + item.quantidade, 0)} itens · Ver carrinho</span><span>{moeda.format(total)}</span></button>}</main>;
 }
