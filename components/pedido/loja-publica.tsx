@@ -2,9 +2,10 @@ import { notFound } from "next/navigation";
 import { Cardapio } from "@/components/pedido/cardapio";
 import { supabase } from "@/lib/supabase/client";
 import type { Loja, Produto } from "@/types/pedeai";
+import { verificarFuncionamento } from "@/lib/operacao";
 
 export async function LojaPublica({ slug }: { slug: string }) {
-  const { data: loja } = await supabase.from("empresas").select("id, nome, slug, whatsapp, logo_url").eq("slug", slug).single();
+  const { data: loja } = await supabase.from("empresas").select("id, nome, slug, whatsapp, logo_url, ativo, bloqueada, modo_operacao, agenda_funcionamento, mensagem_pausa").eq("slug", slug).single();
   if (!loja) notFound();
 
   const { data: produtos } = await supabase.from("produtos").select("id, nome, descricao, preco, disponivel, imagem_url, categorias(nome)").eq("empresa_id", loja.id).eq("disponivel", true).order("created_at");
@@ -14,5 +15,5 @@ export async function LojaPublica({ slug }: { slug: string }) {
     return { ...produto, preco: Number(produto.preco), categoria: categoria ?? null };
   });
 
-  return <Cardapio loja={loja as Loja} produtos={cardapio} />;
+  return <Cardapio loja={loja as Loja} produtos={cardapio} funcionamento={verificarFuncionamento(loja)} />;
 }

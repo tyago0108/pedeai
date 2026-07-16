@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/lib/supabase/server";
+import { verificarFuncionamento } from "@/lib/operacao";
 
 type ItemRecebido = { produtoId: string; quantidade: number };
 type EnderecoRecebido = { endereco?: string; numero?: string; bairro?: string; cidade?: string; estado?: string; complemento?: string; referencia?: string };
@@ -24,8 +25,9 @@ export async function POST(request: Request) {
       return Response.json({ error: "Preencha nome, pagamento e itens do pedido." }, { status: 400 });
     }
 
-    const { data: empresa } = await supabase.from("empresas").select("id,ativo,bloqueada").eq("id", empresaId).maybeSingle();
-    if (!empresa || !empresa.ativo || empresa.bloqueada) return Response.json({ error: "Este restaurante não está aceitando pedidos no momento." }, { status: 403 });
+    const { data: empresa } = await supabase.from("empresas").select("id,ativo,bloqueada,modo_operacao,agenda_funcionamento,mensagem_pausa").eq("id", empresaId).maybeSingle();
+    const funcionamento = empresa ? verificarFuncionamento(empresa) : { aberto: false, mensagem: "Este restaurante não está aceitando pedidos no momento." };
+    if (!funcionamento.aberto) return Response.json({ error: funcionamento.mensagem }, { status: 403 });
     let { data: cliente } = await supabase.from("clientes_publicos").select("id,codigo_acesso").eq("empresa_id", empresaId).eq("telefone", telefone).maybeSingle();
     let novoCodigoCliente: string | null = null;
     if (cliente) {

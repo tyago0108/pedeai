@@ -16,4 +16,7 @@ export type Loja = {
   slug: string;
   whatsapp: string | null;
   logo_url?: string | null;
+  modo_operacao?: string;
+  agenda_funcionamento?: Record<string, { ativo?: boolean; inicio?: string; fim?: string }> | null;
+  mensagem_pausa?: string | null;
 };

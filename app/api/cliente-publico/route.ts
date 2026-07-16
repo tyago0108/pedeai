@@ -13,14 +13,6 @@ export async function POST(request: Request) {
     const admin = getSupabaseAdmin();
     const { data: empresa } = await admin.from("empresas").select("id").eq("slug", slug).eq("ativo", true).maybeSingle();
     if (!empresa) return Response.json({ error: "Restaurante não encontrado." }, { status: 404 });
-    if (acao === "novo-acesso") {
-      const { data: anterior } = await admin.from("clientes_publicos").select("id").eq("empresa_id", empresa.id).eq("telefone", telefone).maybeSingle();
-      if (anterior) {
-        const { error } = await admin.from("clientes_publicos").delete().eq("id", anterior.id);
-        if (error) throw error;
-      }
-      return Response.json({ ok: true });
-    }
     if (!/^[A-Z0-9]{6}$/.test(codigo)) return Response.json({ error: "Informe o código de 6 caracteres." }, { status: 400 });
     const { data: cliente } = await admin.from("clientes_publicos").select("id,nome").eq("empresa_id", empresa.id).eq("telefone", telefone).eq("codigo_acesso", codigo).maybeSingle();
     if (!cliente) return Response.json({ error: "WhatsApp ou código não conferem para este restaurante." }, { status: 403 });
