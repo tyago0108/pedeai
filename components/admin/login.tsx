@@ -4,7 +4,7 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
-export function LoginAdmin() {
+export function LoginAdmin({ redirectTo = "/admin/pedidos" }: { redirectTo?: string }) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -24,7 +24,7 @@ export function LoginAdmin() {
     setEnviando(false);
     if (error) return setErro(error.message);
 
-    router.push("/admin/pedidos");
+    router.push(redirectTo);
     router.refresh();
   }
 

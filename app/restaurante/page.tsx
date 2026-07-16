@@ -1,2 +1,2 @@
-import { LoginAdmin } from "@/components/admin/login";
-export default function RestaurantePage(){return <LoginAdmin/>;}
+import { PainelRestaurante } from "@/components/restaurante/painel-restaurante";
+export default function RestaurantePage(){return <PainelRestaurante/>;}

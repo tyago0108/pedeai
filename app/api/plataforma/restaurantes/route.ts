@@ -3,7 +3,7 @@ import { requirePlatformAdmin } from "@/lib/supabase/server";
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin(request);
-    const { data, error } = await admin.from("empresas").select("id,nome,slug,bloqueada,ativo,created_at,perfis(nome)").order("created_at", { ascending: false });
+    const { data, error } = await admin.from("empresas").select("id,nome,slug,bloqueada,ativo,pendente_aprovacao,created_at,perfis(nome)").order("created_at", { ascending: false });
     if (error) throw error;
     return Response.json(data);
   } catch (error) {
@@ -40,6 +40,9 @@ export async function PATCH(request: Request) {
     if (!empresaId) return Response.json({ error: "Restaurante não informado." }, { status: 400 });
     if (body.acao === "bloquear") {
       const { error } = await admin.from("empresas").update({ bloqueada: Boolean(body.bloqueada), ativo: !Boolean(body.bloqueada) }).eq("id", empresaId);
+      if (error) throw error;
+    } else if (body.acao === "aprovar") {
+      const { error } = await admin.from("empresas").update({ ativo: true, bloqueada: false, pendente_aprovacao: false }).eq("id", empresaId);
       if (error) throw error;
     } else if (body.acao === "senha") {
       const { data: perfil, error: perfilError } = await admin.from("perfis").select("id").eq("empresa_id", empresaId).eq("papel", "dono").single();
