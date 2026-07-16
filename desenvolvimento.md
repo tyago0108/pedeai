@@ -259,3 +259,17 @@ values (
 - Cadastro e edição de produtos pelo painel.
 - Criação de pedido local pelo atendente.
 - Proteção de sessão no servidor e recuperação de senha.
+
+---
+
+## Configuração necessária para a plataforma
+
+O painel `/plataforma` cria usuários administradores dos restaurantes. Para isso, adicione no `.env.local` uma chave exclusiva do servidor, retirada em **Supabase > Project Settings > API > Secret key**:
+
+```env
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_secreta_aqui
+```
+
+Essa chave nunca pode começar com `NEXT_PUBLIC_`, nunca deve ir para o GitHub e não deve ser usada no navegador.
+
+Após isso, execute `database/003_operacao_restaurante.sql` no SQL Editor do Supabase.
