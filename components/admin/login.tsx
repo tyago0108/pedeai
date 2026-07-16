@@ -4,7 +4,9 @@ import { FormEvent, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
 
-export function LoginAdmin({ redirectTo = "/admin/pedidos" }: { redirectTo?: string }) {
+type LoginAdminProps = { redirectTo?: string; titulo?: string; descricao?: string };
+
+export function LoginAdmin({ redirectTo = "/admin/pedidos", titulo = "Acesso da lanchonete", descricao = "Entre para acompanhar e organizar pedidos." }: LoginAdminProps) {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [senha, setSenha] = useState("");
@@ -32,8 +34,8 @@ export function LoginAdmin({ redirectTo = "/admin/pedidos" }: { redirectTo?: str
     <main className="grid min-h-screen place-items-center bg-stone-950 px-4">
       <form onSubmit={entrar} className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
         <p className="text-sm font-bold uppercase tracking-widest text-orange-500">PedeAI</p>
-        <h1 className="mt-2 text-2xl font-bold text-stone-900">Acesso da lanchonete</h1>
-        <p className="mt-2 text-sm text-stone-500">Entre para acompanhar e organizar pedidos.</p>
+        <h1 className="mt-2 text-2xl font-bold text-stone-900">{titulo}</h1>
+        <p className="mt-2 text-sm text-stone-500">{descricao}</p>
         <div className="mt-6 space-y-3">
           <input required type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="E-mail" className="w-full rounded-xl border border-stone-200 px-4 py-3" />
           <input required type="password" value={senha} onChange={(e) => setSenha(e.target.value)} placeholder="Senha" className="w-full rounded-xl border border-stone-200 px-4 py-3" />
