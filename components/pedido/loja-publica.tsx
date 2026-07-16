@@ -8,7 +8,11 @@ export async function LojaPublica({ slug }: { slug: string }) {
   if (!loja) notFound();
 
   const { data: produtos } = await supabase.from("produtos").select("id, nome, descricao, preco, disponivel, imagem_url, categorias(nome)").eq("empresa_id", loja.id).eq("disponivel", true).order("created_at");
-  const cardapio: Produto[] = (produtos ?? []).map((produto) => ({ ...produto, preco: Number(produto.preco), categoria: produto.categorias[0]?.nome ?? null }));
+  const cardapio: Produto[] = (produtos ?? []).map((produto) => {
+    const relacaoCategoria = produto.categorias as { nome?: string } | { nome?: string }[] | null;
+    const categoria = Array.isArray(relacaoCategoria) ? relacaoCategoria[0]?.nome : relacaoCategoria?.nome;
+    return { ...produto, preco: Number(produto.preco), categoria: categoria ?? null };
+  });
 
   return <Cardapio loja={loja as Loja} produtos={cardapio} />;
 }
