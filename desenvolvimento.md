@@ -221,3 +221,41 @@ Configurar Supabase.
 - Criar projeto.
 - Configurar variáveis ambiente.
 - Criar conexão.
+
+---
+
+# MVP atual — Pedidos
+
+Implementado em 16/07/2026:
+
+- Cardápio público por link: `/loja/[slug]`.
+- Carrinho e envio de pedido pelo cliente.
+- Pedidos identificados como origem WhatsApp.
+- Painel administrativo: `/admin` e `/admin/pedidos`.
+- Atualização do status do pedido pela lanchonete.
+- Banco multiempresa, com todos os dados ligados a `empresa_id`.
+
+## Ativação no Supabase
+
+1. No **SQL Editor** do Supabase, execute todo o conteúdo de `database/001_mvp_inicial.sql`.
+2. Em **Authentication > Users**, crie o primeiro usuário administrador com e-mail e senha.
+3. No SQL Editor, execute o comando abaixo, substituindo os valores pelos dados reais:
+
+```sql
+insert into public.perfis (id, empresa_id, nome, papel)
+values (
+  'ID_DO_USUARIO_CRIADO_NO_AUTH',
+  (select id from public.empresas where slug = 'minha-lanchonete'),
+  'Nome do responsável',
+  'dono'
+);
+```
+
+4. O cardápio de demonstração fica em `/loja/minha-lanchonete`.
+5. Acesse `/admin` com o usuário criado para visualizar e atualizar os pedidos.
+
+## Próxima etapa
+
+- Cadastro e edição de produtos pelo painel.
+- Criação de pedido local pelo atendente.
+- Proteção de sessão no servidor e recuperação de senha.
