@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase/client";
+import { FormularioPedidoBalcao } from "@/components/admin/formulario-pedido-balcao";
 
 type Pedido = {
   id: string; numero_pedido: number; cliente_nome: string; cliente_telefone: string | null;
@@ -57,7 +58,12 @@ export function PainelPedidos() {
   const [empresaId, setEmpresaId] = useState("");
   const [empresa, setEmpresa] = useState<Empresa | null>(null);
   const [detalhe, setDetalhe] = useState<{ pedido: Pedido; itens: Item[] } | null>(null);
-  const [balcao, setBalcao] = useState(false);
+  const [balcao, setBalcaoAntigo] = useState(false);
+  const [balcaoNovo, setBalcaoNovo] = useState(false);
+  const setBalcao = (aberto: boolean) => {
+    setBalcaoAntigo(false);
+    if (aberto) setBalcaoNovo(true);
+  };
   const [itensBalcao, setItensBalcao] = useState<ItemBalcao[]>([]);
   const [buscaBalcao, setBuscaBalcao] = useState("");
   const [edicao, setEdicao] = useState<Pedido | null>(null);
@@ -299,5 +305,6 @@ export function PainelPedidos() {
     {edicao && <div className="fixed inset-0 z-50 grid place-items-center bg-black/40 p-4"><form onSubmit={salvarEdicao} className="w-full max-w-md rounded-3xl bg-white p-5"><div className="flex justify-between"><h2 className="text-xl font-bold">Editar {numero(edicao.numero_pedido)}</h2><button type="button" onClick={() => setEdicao(null)} className="text-xl">×</button></div><input value={edicao.cliente_nome} onChange={(event) => setEdicao({ ...edicao, cliente_nome: event.target.value })} className="campo mt-4" /><input value={edicao.cliente_telefone ?? ""} onChange={(event) => setEdicao({ ...edicao, cliente_telefone: event.target.value })} className="campo mt-2" /><select value={edicao.tipo_atendimento} onChange={(event) => setEdicao({ ...edicao, tipo_atendimento: event.target.value })} className="campo mt-2"><option value="local">No restaurante</option><option value="retirada">Retirada</option><option value="entrega">Entrega</option></select><textarea value={edicao.endereco_entrega ?? ""} onChange={(event) => setEdicao({ ...edicao, endereco_entrega: event.target.value })} className="campo mt-2" /><select value={edicao.pagamento} onChange={(event) => setEdicao({ ...edicao, pagamento: event.target.value })} className="campo mt-2"><option>Dinheiro</option><option>Cartão</option><option>Pix</option></select><button className="mt-4 w-full rounded-xl bg-orange-500 py-3 font-bold text-white">Salvar alterações</button></form></div>}
 
     <nav className="fixed inset-x-0 bottom-0 grid grid-cols-3 border-t bg-white sm:grid-cols-6"><Link href="/restaurante" className="p-3 text-center text-xs">Painel</Link><Link href="/restaurante/pedidos" className="p-3 text-center text-xs font-bold text-orange-600">Pedidos</Link><Link href="/restaurante/historico" className="p-3 text-center text-xs">Histórico</Link><Link href="/restaurante/financeiro" className="p-3 text-center text-xs">Financeiro</Link><Link href="/restaurante/cardapio" className="p-3 text-center text-xs">Cardápio</Link><Link href="/restaurante/configuracoes" className="p-3 text-center text-xs">Ajustes</Link></nav>
+    {balcaoNovo && <FormularioPedidoBalcao produtos={produtos} aoFechar={() => setBalcaoNovo(false)} aoCriar={() => { void carregar(); }} />}
   </main>;
 }
