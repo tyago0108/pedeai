@@ -1,9 +1,10 @@
-import { supabase } from "@/lib/supabase/client";
+import { getSupabaseAdmin } from "@/lib/supabase/server";
 
 type ItemRecebido = { produtoId: string; quantidade: number };
 
 export async function POST(request: Request) {
   try {
+    const supabase = getSupabaseAdmin();
     const body = await request.json();
     const nome = typeof body.nome === "string" ? body.nome.trim() : "";
     const telefone = typeof body.telefone === "string" ? body.telefone.trim() : null;
