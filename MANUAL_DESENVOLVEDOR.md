@@ -65,6 +65,7 @@ Execute os arquivos da pasta `database` no **SQL Editor** do Supabase, nesta ord
 017_tempo_por_etapa_pedido.sql
 018_pedido_local.sql
 019_status_pronto_retirada.sql
+020_operacao_plataforma.sql
 ```
 
 `001_mvp_inicial.sql` cria as tabelas base e dados de demonstração; não execute esse arquivo novamente em um projeto já inicializado. As migrações seguintes usam `if not exists` sempre que possível, mas ainda devem ser aplicadas uma vez e na ordem.

@@ -15,6 +15,9 @@ export async function POST(request: Request) {
     if (userError || !usuario.user) { await admin.from("empresas").delete().eq("id", empresa.id); throw userError ?? new Error("Não foi possível criar o usuário."); }
     const { error: perfilError } = await admin.from("perfis").insert({ id: usuario.user.id, empresa_id: empresa.id, nome: `Administrador ${nome}`, papel: "dono" });
     if (perfilError) throw perfilError;
+    const { data: planoTeste } = await admin.from("planos_plataforma").select("id,valor_mensal").eq("nome", "Teste").maybeSingle();
+    const { error: assinaturaErro } = await admin.from("assinaturas_restaurante").insert({ empresa_id: empresa.id, plano_id: planoTeste?.id ?? null, status: "teste", valor_mensal: planoTeste?.valor_mensal ?? 0 });
+    if (assinaturaErro) throw assinaturaErro;
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Não foi possível concluir o cadastro." }, { status: 400 });
