@@ -7,14 +7,18 @@ export async function GET(request: Request) {
     const inicioHoje = new Date(agora.getFullYear(), agora.getMonth(), agora.getDate()).toISOString();
     const inicioMes = new Date(agora.getFullYear(), agora.getMonth(), 1).toISOString();
     const hoje = agora.toISOString().slice(0, 10);
-    const [empresas, pedidos, pagamentos, assinaturas, chamados] = await Promise.all([
+    const [empresas, pedidos] = await Promise.all([
       admin.from("empresas").select("id,ativo,bloqueada,pendente_aprovacao,modo_operacao"),
       admin.from("pedidos").select("id,total").gte("created_at", inicioHoje),
+    ]);
+    if (empresas.error || pedidos.error) throw empresas.error ?? pedidos.error;
+    // Financeiro e suporte são recursos incrementais. Eles não podem impedir
+    // a exibição dos restaurantes e dos pedidos existentes.
+    const [pagamentos, assinaturas, chamados] = await Promise.all([
       admin.from("pagamentos_plataforma").select("valor").eq("status", "confirmado").gte("pago_em", inicioMes),
       admin.from("assinaturas_restaurante").select("empresa_id,status,vencimento_em,bloqueio_automatico"),
       admin.from("chamados_suporte").select("id", { count: "exact", head: true }).in("status", ["aberto", "em_atendimento"]),
     ]);
-    if (empresas.error || pedidos.error || pagamentos.error || assinaturas.error || chamados.error) throw empresas.error ?? pedidos.error ?? pagamentos.error ?? assinaturas.error ?? chamados.error;
     const lista = empresas.data ?? [];
     const vencidas = (assinaturas.data ?? []).filter((assinatura) => Boolean(assinatura.vencimento_em) && assinatura.vencimento_em! < hoje && ["ativo", "teste", "inadimplente"].includes(assinatura.status));
     return Response.json({

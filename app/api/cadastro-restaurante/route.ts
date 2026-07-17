@@ -15,9 +15,13 @@ export async function POST(request: Request) {
     if (userError || !usuario.user) { await admin.from("empresas").delete().eq("id", empresa.id); throw userError ?? new Error("Não foi possível criar o usuário."); }
     const { error: perfilError } = await admin.from("perfis").insert({ id: usuario.user.id, empresa_id: empresa.id, nome: `Administrador ${nome}`, papel: "dono" });
     if (perfilError) throw perfilError;
-    const { data: planoTeste } = await admin.from("planos_plataforma").select("id,valor_mensal").eq("nome", "Teste").maybeSingle();
+    // O cadastro básico deve continuar disponível enquanto a migração de
+    // planos ainda não foi aplicada. Ao aplicá-la, ela cria a assinatura dos
+    // restaurantes já existentes automaticamente.
+    const { data: planoTeste, error: planoErro } = await admin.from("planos_plataforma").select("id,valor_mensal").eq("nome", "Teste").maybeSingle();
+    if (planoErro && planoErro.code !== "42P01") throw planoErro;
     const { error: assinaturaErro } = await admin.from("assinaturas_restaurante").insert({ empresa_id: empresa.id, plano_id: planoTeste?.id ?? null, status: "teste", valor_mensal: planoTeste?.valor_mensal ?? 0 });
-    if (assinaturaErro) throw assinaturaErro;
+    if (assinaturaErro && assinaturaErro.code !== "42P01") throw assinaturaErro;
     return Response.json({ ok: true }, { status: 201 });
   } catch (error) {
     return Response.json({ error: error instanceof Error ? error.message : "Não foi possível concluir o cadastro." }, { status: 400 });

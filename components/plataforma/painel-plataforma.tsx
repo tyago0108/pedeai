@@ -37,6 +37,7 @@ export function PainelPlataforma() {
   const [chamados, setChamados] = useState<Chamado[]>([]);
   const [logs, setLogs] = useState<Log[]>([]);
   const [configuracoes, setConfiguracoes] = useState<Configuracao[]>([]);
+  const [recursosIndisponiveis, setRecursosIndisponiveis] = useState<string[]>([]);
   const [erro, setErro] = useState(""); const [carregando, setCarregando] = useState(true);
   const [buscaPedido, setBuscaPedido] = useState(""); const [statusPedido, setStatusPedido] = useState(""); const [empresaPedido, setEmpresaPedido] = useState(""); const [dataPedidoDe, setDataPedidoDe] = useState(""); const [dataPedidoAte, setDataPedidoAte] = useState("");
   const [novoRestaurante, setNovoRestaurante] = useState({ nome: "", slug: "", email: "", senha: "" });
@@ -56,15 +57,31 @@ export function PainelPlataforma() {
   async function carregar() {
     setCarregando(true); setErro("");
     try {
-      const [dadosResumo, dadosEmpresas, dadosPedidos, dadosFinanceiro, dadosChamados, dadosLogs, dadosConfiguracoes] = await Promise.all([
-        requisicao("/api/plataforma/resumo"), requisicao("/api/plataforma/restaurantes"), requisicao("/api/plataforma/pedidos"), requisicao("/api/plataforma/financeiro"), requisicao("/api/plataforma/suporte"), requisicao("/api/plataforma/auditoria"), requisicao("/api/plataforma/configuracoes"),
+      // Restaurantes são dados essenciais. Uma feature nova sem migração não
+      // pode esconder a lista de empresas que já existe no Supabase.
+      const dadosEmpresas = await requisicao("/api/plataforma/restaurantes");
+      setEmpresas(dadosEmpresas);
+      const resultados = await Promise.allSettled([
+        requisicao("/api/plataforma/resumo"), requisicao("/api/plataforma/pedidos"), requisicao("/api/plataforma/financeiro"), requisicao("/api/plataforma/suporte"), requisicao("/api/plataforma/auditoria"), requisicao("/api/plataforma/configuracoes"),
       ]);
-      setResumo(dadosResumo); setEmpresas(dadosEmpresas); setPedidos(dadosPedidos); setPlanos(dadosFinanceiro.planos); setAssinaturas(dadosFinanceiro.assinaturas); setPagamentos(dadosFinanceiro.pagamentos); setChamados(dadosChamados); setLogs(dadosLogs); setConfiguracoes(dadosConfiguracoes);
+      const [resultadoResumo, resultadoPedidos, resultadoFinanceiro, resultadoChamados, resultadoLogs, resultadoConfiguracoes] = resultados;
+      const nomesRecursos = ["resumo", "pedidos", "financeiro", "suporte", "segurança", "configurações"];
+      setRecursosIndisponiveis(resultados.flatMap((resultado, indice) => resultado.status === "rejected" ? [nomesRecursos[indice]] : []));
+      if (resultadoResumo.status === "fulfilled") setResumo(resultadoResumo.value);
+      if (resultadoPedidos.status === "fulfilled") setPedidos(resultadoPedidos.value);
+      if (resultadoFinanceiro.status === "fulfilled") { setPlanos(resultadoFinanceiro.value.planos); setAssinaturas(resultadoFinanceiro.value.assinaturas); setPagamentos(resultadoFinanceiro.value.pagamentos); }
+      if (resultadoChamados.status === "fulfilled") setChamados(resultadoChamados.value);
+      if (resultadoLogs.status === "fulfilled") setLogs(resultadoLogs.value);
+      if (resultadoConfiguracoes.status === "fulfilled") setConfiguracoes(resultadoConfiguracoes.value);
     } catch (causa) { setErro(causa instanceof Error ? causa.message : "Não foi possível carregar a plataforma."); }
     finally { setCarregando(false); }
   }
 
   useEffect(() => { void carregar(); }, []);
+
+  useEffect(() => {
+    if (recursosIndisponiveis.length) setErro(`Recursos avançados indisponíveis (${recursosIndisponiveis.join(", ")}). Execute a migração database/020_operacao_plataforma.sql; os restaurantes continuam disponíveis.`);
+  }, [recursosIndisponiveis]);
 
   async function enviar(url: string, method: string, body?: unknown) {
     setErro("");

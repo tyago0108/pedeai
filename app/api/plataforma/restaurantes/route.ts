@@ -12,8 +12,14 @@ async function administradorDaEmpresa(admin: Awaited<ReturnType<typeof requirePl
 export async function GET(request: Request) {
   try {
     const { admin } = await requirePlatformAdmin(request);
-    const { data, error } = await admin.from("empresas").select("id,nome,slug,whatsapp,endereco,horario_funcionamento,logo_url,taxa_entrega,taxa_cartao,tempo_entrega_minutos,bloqueada,ativo,pendente_aprovacao,modo_operacao,created_at,perfis(id,nome,papel),assinaturas_restaurante(id,status,valor_mensal,vencimento_em,bloqueio_automatico,planos_plataforma(nome))").order("created_at", { ascending: false });
+    // Empresas e perfis são a base do painel. Não faça essa consulta depender
+    // das tabelas financeiras, pois instalações anteriores ainda podem não ter
+    // executado a migração de operação da plataforma.
+    const { data, error } = await admin.from("empresas").select("id,nome,slug,whatsapp,endereco,horario_funcionamento,logo_url,taxa_entrega,taxa_cartao,tempo_entrega_minutos,bloqueada,ativo,pendente_aprovacao,modo_operacao,created_at,perfis(id,nome,papel)").order("created_at", { ascending: false });
     if (error) throw error;
+    const { data: assinaturas, error: assinaturasErro } = await admin.from("assinaturas_restaurante").select("id,empresa_id,status,valor_mensal,vencimento_em,bloqueio_automatico,planos_plataforma(nome)");
+    if (assinaturasErro && assinaturasErro.code !== "42P01") throw assinaturasErro;
+    const assinaturaPorEmpresa = new Map((assinaturas ?? []).map((assinatura) => [assinatura.empresa_id, assinatura]));
     const empresas = await Promise.all((data ?? []).map(async (empresa) => {
       const perfis = Array.isArray(empresa.perfis) ? empresa.perfis : [];
       const dono = perfis.find((perfil) => perfil.papel === "dono") ?? perfis[0];
@@ -21,7 +27,7 @@ export async function GET(request: Request) {
       return {
         ...empresa,
         administrador: dono ? { id: dono.id, nome: dono.nome, email: usuario.data.user?.email ?? null, ultimoAcesso: usuario.data.user?.last_sign_in_at ?? null } : null,
-        assinatura: Array.isArray(empresa.assinaturas_restaurante) ? empresa.assinaturas_restaurante[0] ?? null : empresa.assinaturas_restaurante ?? null,
+        assinatura: assinaturaPorEmpresa.get(empresa.id) ?? null,
       };
     }));
     return Response.json(empresas);
@@ -45,9 +51,10 @@ export async function POST(request: Request) {
     if (authError || !authData.user) { await admin.from("empresas").delete().eq("id", empresa.id); throw authError ?? new Error("Não foi possível criar o administrador."); }
     const { error: perfilError } = await admin.from("perfis").insert({ id: authData.user.id, empresa_id: empresa.id, nome: `Administrador ${nome}`, papel: "dono" });
     if (perfilError) throw perfilError;
-    const { data: planoTeste } = await admin.from("planos_plataforma").select("id,valor_mensal").eq("nome", "Teste").maybeSingle();
+    const { data: planoTeste, error: planoErro } = await admin.from("planos_plataforma").select("id,valor_mensal").eq("nome", "Teste").maybeSingle();
+    if (planoErro && planoErro.code !== "42P01") throw planoErro;
     const { error: assinaturaErro } = await admin.from("assinaturas_restaurante").insert({ empresa_id: empresa.id, plano_id: planoTeste?.id ?? null, status: "teste", valor_mensal: planoTeste?.valor_mensal ?? 0 });
-    if (assinaturaErro) throw assinaturaErro;
+    if (assinaturaErro && assinaturaErro.code !== "42P01") throw assinaturaErro;
     await registrarAuditoria(admin, { administradorId: user.id, empresaId: empresa.id, acao: "criou", recurso: "restaurante", detalhes: { nome, slug, email } });
     return Response.json({ id: empresa.id, slug }, { status: 201 });
   } catch (error) {
