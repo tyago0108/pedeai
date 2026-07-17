@@ -6,6 +6,10 @@ A confirmação de entrega ou retirada por código foi preparada na estrutura do
 
 Pedidos para retirada possuem a etapa `pronto_para_retirada`. Execute `database/019_status_pronto_retirada.sql` no SQL Editor do Supabase antes de publicar esta versão.
 
+## Manual do desenvolvedor
+
+Consulte o [MANUAL_DESENVOLVEDOR.md](./MANUAL_DESENVOLVEDOR.md) para configuração do ambiente, migrações do Supabase, novos campos, pagamentos, status, RLS, rotas, diagnóstico e publicação.
+
 ## Getting Started
 
 First, run the development server:
