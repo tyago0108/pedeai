@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 type Empresa = { nome: string; slug: string; tempo_entrega_minutos: number; whatsapp: string | null; pix_chave: string | null; pix_mensagem: string | null };
 type Pedido = { numero_pedido: number; cliente_nome: string; status: string; total: number; created_at: string; tipo_atendimento: string; pagamento: string; empresas: Empresa | Empresa[] | null };
 
-const etapas = ["recebido", "preparando", "saiu_para_entrega", "finalizado"];
 const mensagens: Record<string, { titulo: string; texto: string; emoji: string }> = {
   recebido: { titulo: "Pedido recebido", texto: "Estamos conferindo tudo e separando os ingredientes.", emoji: "🧾" },
   preparando: { titulo: "Na cozinha", texto: "Hora de preparar seu pedido com todo o cuidado.", emoji: "🍔" },
@@ -15,6 +14,8 @@ const mensagens: Record<string, { titulo: string; texto: string; emoji: string }
   entregue: { titulo: "Pedido concluído", texto: "Bom apetite! Esperamos que você aproveite muito.", emoji: "✨" },
   cancelado: { titulo: "Pedido cancelado", texto: "Fale com o restaurante para mais informações.", emoji: "⚠️" },
 };
+
+mensagens.pronto_para_retirada = { titulo: "Pronto para retirada", texto: "Seu pedido está pronto. Pode vir buscar no restaurante.", emoji: "🛍️" };
 
 function copiarTexto(valor: string) {
   if (navigator.clipboard?.writeText) return navigator.clipboard.writeText(valor);
@@ -63,6 +64,9 @@ export function AcompanharPedido({ codigo, senhaGerada, aoVoltar }: { codigo: st
 
   const empresa = Array.isArray(pedido.empresas) ? pedido.empresas[0] : pedido.empresas;
   const statusExibicao = pedido.status === "entregue" ? "finalizado" : pedido.status;
+  const etapas = pedido.tipo_atendimento === "retirada"
+    ? ["recebido", "preparando", "pronto_para_retirada", "finalizado"]
+    : ["recebido", "preparando", "saiu_para_entrega", "finalizado"];
   const info = mensagens[statusExibicao] ?? mensagens.recebido;
   const indice = etapas.indexOf(statusExibicao);
   const telefone = String(empresa?.whatsapp ?? "").replace(/\D/g, "");

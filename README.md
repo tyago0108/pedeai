@@ -4,6 +4,8 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 A confirmação de entrega ou retirada por código foi preparada na estrutura do projeto, mas está desativada no momento. Pedidos são concluídos diretamente pelo restaurante; a confirmação por código será reavaliada em uma versão futura.
 
+Pedidos para retirada possuem a etapa `pronto_para_retirada`. Execute `database/019_status_pronto_retirada.sql` no SQL Editor do Supabase antes de publicar esta versão.
+
 ## Getting Started
 
 First, run the development server:
