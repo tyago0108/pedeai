@@ -107,6 +107,7 @@ export async function POST(request: Request) {
     return NextResponse.json({ numeroPedido: pedido.numero_pedido, codigoAcesso, codigoFoiAtualizado: gerarNovoCodigo || !existente }, { status: 201 });
   } catch (error) {
     console.error("Erro ao criar pedido de balcão", error);
-    return NextResponse.json({ error: error instanceof Error ? error.message : "Não foi possível criar o pedido de balcão." }, { status: 500 });
+    const mensagem = error instanceof Error ? error.message : typeof error === "object" && error !== null && "message" in error ? String(error.message) : "Erro inesperado no banco de dados.";
+    return NextResponse.json({ error: `Não foi possível criar o pedido de balcão: ${mensagem}` }, { status: 500 });
   }
 }
